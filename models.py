@@ -2,6 +2,16 @@ import torch
 import torch.nn as nn
 
 
+class ZeroPad1d(nn.Module):
+    def __init__(self):
+        super(ZeroPad1d, self).__init__()
+
+    def forward(self, x):
+        # Colle des zéros le long de la dimension des channels (dim 1)
+        # Cela double la profondeur : [N, C, L] -> [N, 2C, L]
+        return torch.cat([x, torch.zeros_like(x)], dim=1)
+
+
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, dropout_prob, is_first_block=False):
         super(ResidualBlock, self).__init__()
@@ -9,41 +19,43 @@ class ResidualBlock(nn.Module):
         # Calcul du padding manuel pour le cas stride > 1
         self.manual_padding = (kernel_size - 1) // 2
         
+        # --- MAIN BLOCK (Chemin principal) ---
         layers = []
         
-        # Partie 1 : Avant la première convolution (inchangée)
         if not is_first_block:
             layers.append(nn.BatchNorm1d(in_channels))
             layers.append(nn.ReLU())
         
-        # --- Partie 2 : Première Convolution ---
-        # CORRECTION ICI : Choix dynamique du padding
-        # Si stride=1, 'same' garantit la conservation de taille.
-        # Si stride=2, 'same' est interdit, donc on utilise le manuel.
+        # 1ère Conv : Choix dynamique du padding
         padding_val = 'same' if stride == 1 else self.manual_padding
-        
         layers.append(nn.Conv1d(in_channels, out_channels, kernel_size, 
                                 stride=stride, padding=padding_val))
         
-        # Partie 3 : Entre les deux convolutions (inchangée)
         layers.append(nn.BatchNorm1d(out_channels))
         layers.append(nn.ReLU())
         layers.append(nn.Dropout(dropout_prob))
         
-        # --- Partie 4 : Deuxième Convolution ---
-        # Ici le stride est toujours 1, donc 'same' est parfait
+        # 2ème Conv : Toujours stride=1 donc padding='same'
         layers.append(nn.Conv1d(out_channels, out_channels, kernel_size, 
                                 stride=1, padding='same'))
         
         self.block = nn.Sequential(*layers)
 
-        # --- Shortcut (inchangé) ---
-        self.downsample = nn.Sequential()
-        if stride > 1 or in_channels != out_channels:
-            self.downsample = nn.Sequential(
-                nn.MaxPool1d(kernel_size=stride, stride=stride),
-                nn.Conv1d(in_channels, out_channels, kernel_size=1)
-            )
+        # --- SHORTCUT (Raccourci) ---
+        # On construit le raccourci étape par étape
+        shortcut_layers = []
+        
+        # 1. Si on réduit la longueur (L), on ajoute MaxPool
+        if stride > 1:
+            shortcut_layers.append(nn.MaxPool1d(kernel_size=stride, stride=stride))
+            
+        # 2. Si (et seulement si) on change la profondeur (C), on ajoute ZeroPad
+        if in_channels != out_channels:
+            shortcut_layers.append(ZeroPad1d())
+
+        # Si la liste contient quelque chose, on en fait un Sequential
+        # Sinon, c'est une liste vide qui agit comme une identité
+        self.downsample = nn.Sequential(*shortcut_layers)
 
     def forward(self, x):
         return self.block(x) + self.downsample(x)
@@ -116,39 +128,46 @@ class SOTAModel(nn.Module):
         
         # Global Average Pooling : on moyenne sur toute la longueur temporelle
         # x shape: (Batch, Channels, Length) -> (Batch, Channels)
-        x = x.mean(dim=2) 
-        
+        #x = x.mean(dim=2) 
+        x = x.transpose(1, 2)
+
         x = self.dense(x)
         return x
 
 
 if __name__ == "__main__":
+    import torch
+    
     # --- SANITY CHECK ---
-    print("Running Sanity Check...")
+    print("🚀 Running Sanity Check...")
     
     # 1. Define dummy input parameters
-    # Batch size = 2 (just to check if batch processing works)
-    # Channels = 1 (Single-lead ECG)
-    # Length = 2000 (Random length, just needs to be long enough)
     N, C, L = 2, 1, 2000
-    
-    # 2. Create random dummy data
-    # torch.randn generates data from a normal distribution
     x = torch.randn(N, C, L)
     print(f"Input shape: {x.shape}")
     
-    # 3. Instantiate the model
-    # We use the defaults: filters=32, kernel_size=16
-    model = SOTAModel(filters=32, kernel_size=16, num_classes=12)
+    # 2. Instantiate the model
+    # Note: We use the defaults from the paper (filters=32, kernel=16)
+    model = SOTAModel(kernel_size=16, filters=32, num_classes=12)
     
+    # 3. Try to use torchinfo for a beautiful summary
+    try:
+        from torchinfo import summary
+        print("\n--- Model Summary ---")
+        summary(model, input_size=(N, C, L), 
+                col_names=["input_size", "output_size", "num_params", "kernel_size"],
+                depth=3) # depth=3 allows to see inside the Sequential blocks
+        print("---------------------\n")
+    except ImportError:
+        print("⚠️ torchinfo not found. Run 'pip install torchinfo' to get a detailed summary.")
+
     # 4. Forward pass (The moment of truth!)
     try:
         y = model(x)
         print(f"Output shape: {y.shape}")
         
         # 5. Verification
-        # We expect Output to be (Batch_Size, Num_Classes) -> (2, 12)
-        expected_shape = (N, 12)
+        expected_shape = (N, 7, 12)
         if y.shape == expected_shape:
             print("✅ Success! The output shape is correct.")
         else:
