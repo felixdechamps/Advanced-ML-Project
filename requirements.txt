@@ -1,0 +1,8 @@
+matplotlib
+wfdb
+torch
+torchinfo
+tqdm
+scipy
+counter
+scikit-learn
