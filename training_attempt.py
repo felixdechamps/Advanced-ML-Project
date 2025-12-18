@@ -10,16 +10,15 @@ from main_Aurane_py import X_proc, Y_int
 
 RANDOM_SEED = 42
 BATCH_SIZE = 32
-NUM_EPOCHS = 25
-LR = 1e-3
-VAL_SPLIT = 0.2
+NUM_EPOCHS = 25 # à changer
+LR = 1e-3 # à changer
+VAL_SPLIT = 0.15
 
 model_path="models.py"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 np.random.seed(RANDOM_SEED)
 torch.manual_seed(RANDOM_SEED)
-
 
 
 class ECGDataset(Dataset):
@@ -48,3 +47,7 @@ val_dataset   = ECGDataset(X_val, y_val)
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=True)
 val_loader   = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=True)
+
+num_classes = len(np.unique(Y_int))
+from models import model
+
