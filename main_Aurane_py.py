@@ -34,19 +34,24 @@ for rec in records:
 Y = np.array(Y)
 
 min_window_size=min([len(s) for s in X])
+chosen_window_size=9000
 print(f"\n The shortest window is of size {min_window_size} eg corresponding to {round(min_window_size/freq,1)} s.")
 print(f"\n The median window is of size {np.median([len(s) for s in X])}")
 
-def pad_signal(signal, target_len, val=0):
+def pad_signal(signal, target_len, fill, val=0):
     '''
     Returns a truncated signal of size equal to target_len, filled with zeros in when original signal is shorter than the targeted one.
     '''
     if len(signal) >= target_len:
         return signal[:target_len]        
     else:
-        padded = np.full(target_len, val, dtype=signal.dtype)
-        padded[:len(signal)] = signal     
-        return padded
+        if fill==True:
+            padded = np.full(target_len, val, dtype=signal.dtype)
+            padded[:len(signal)] = signal     
+            return padded
+        else:
+            return None
+
 
 def compute_mean_std(x):
     x = np.hstack(x)
@@ -60,10 +65,10 @@ def process_x(x):
     return x
 
 # Getting X and Y
-X_pad=np.array([pad_signal(s,min_window_size,0) for s in X])
-X_proc=process_x(X_pad)
-classes=np.unique(Y)
-class_to_int = {c:i for i,c in enumerate(classes)}
+X_pad=np.array([pad_signal(s,chosen_window_size,True,0) for s in X])
+print(X_pad.shape)
+classes_str=np.unique(Y)
+class_to_int = {c:i for i,c in enumerate(classes_str)}
 print(f"\n The conversion of the labels gives {class_to_int}.")
 Y_int = np.array([class_to_int[c] for c in Y])
 
