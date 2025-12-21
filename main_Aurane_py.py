@@ -61,12 +61,10 @@ def compute_mean_std(x):
 def process_x(x):
     mean, std = compute_mean_std(x)
     x = (x - mean) /std
-    x = x[:, :, None]
     return x
 
 # Getting X and Y
 X_pad=np.array([pad_signal(s,chosen_window_size,True,0) for s in X])
-print(X_pad.shape)
 classes_str=np.unique(Y)
 class_to_int = {c:i for i,c in enumerate(classes_str)}
 print(f"\n The conversion of the labels gives {class_to_int}.")
