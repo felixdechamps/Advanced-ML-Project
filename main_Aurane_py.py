@@ -7,12 +7,25 @@ import wfdb
 import os
 import glob
 import tensorflow
+from pathlib import Path
 
 data_path = 'training/training2017/'
 
+def get_data(filename):
+    data_path= Path(filename)
+    if data_path.suffix==".zip":
+        with zipfile.ZipFile(data_path) as z:
+            with z.open("training2017/REFERENCE.csv") as f:
+                labels = pd.read_csv(f, header=None, names=["record", "label"])
+    else: 
+        labels = pd.read_csv(data_path / "REFERENCE.csv", header=None, names=["record", "label"])
+    return labels
+
 # Load the labels
-labels_df2=pd.read_csv(os.path.join(data_path, "REFERENCE.csv"), header=None, names=["record","label"])
-print(f"\n All the possible labels are {pd.unique(labels_df2.label)}.")
+labels=get_data(data_path)
+#labels_df2=pd.read_csv(os.path.join(data_path, "REFERENCE.csv"), header=None, names=["record","label"])
+
+print(f"\n All the possible labels are {pd.unique(labels.label)}.")
 
 # Turning the training record files into an array
 # (IL FAUDRAIT RENDRE LE CODE UN PEU PLUS EFFICACE)
@@ -27,7 +40,7 @@ for rec in records:
     record = wfdb.rdrecord(os.path.join(data_path, record_name))
     signal = record.p_signal[:,0]
     freq=record.fs
-    y=labels_df2[labels_df2.record==record_name]["label"].values[0]
+    y=labels[labels.record==record_name]["label"].values[0]
     Y.append(y)
     X.append(signal)
     
