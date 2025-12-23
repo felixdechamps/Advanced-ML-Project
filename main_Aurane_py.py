@@ -1,29 +1,26 @@
-import numpy as np 
+import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import urllib.request
 import zipfile
 import wfdb
 import os
 import glob
-import tensorflow
 from pathlib import Path
 
-data_path = 'training/training2017/'
 
-def get_data(filename):
-    data_path= Path(filename)
-    if data_path.suffix==".zip":
-        with zipfile.ZipFile(data_path) as z:
-            with z.open("training2017/REFERENCE.csv") as f:
-                labels = pd.read_csv(f, header=None, names=["record", "label"])
-    else: 
-        labels = pd.read_csv(data_path / "REFERENCE.csv", header=None, names=["record", "label"])
-    return labels
+root = Path(__file__).parent.resolve()
+filename = root/"training2017.zip"
+
+extract_dir = root / "training2017"
+
+if not extract_dir.exists():
+    with zipfile.ZipFile(filename) as z:
+        z.extractall(extract_dir)
+
+data_path = extract_dir/"training2017"
 
 # Load the labels
-labels=get_data(data_path)
-#labels_df2=pd.read_csv(os.path.join(data_path, "REFERENCE.csv"), header=None, names=["record","label"])
+
+labels = pd.read_csv(os.path.join(data_path, "REFERENCE.csv"), header=None, names=["record", "label"])
 
 print(f"\n All the possible labels are {pd.unique(labels.label)}.")
 
@@ -38,48 +35,49 @@ Y = []
 for rec in records:
     record_name = os.path.basename(rec).split('.')[0]
     record = wfdb.rdrecord(os.path.join(data_path, record_name))
-    signal = record.p_signal[:,0]
-    freq=record.fs
-    y=labels[labels.record==record_name]["label"].values[0]
+    signal = record.p_signal[:, 0]
+    freq = record.fs
+    y = labels[labels.record == record_name]["label"].values[0]
     Y.append(y)
     X.append(signal)
     
 Y = np.array(Y)
 
-min_window_size=min([len(s) for s in X])
-chosen_window_size=9000
-print(f"\n The shortest window is of size {min_window_size} eg corresponding to {round(min_window_size/freq,1)} s.")
+min_window_size = min([len(s) for s in X])
+chosen_window_size = 9000
+print(f"\n The shortest window is of size {min_window_size} eg corresponding to {round(min_window_size/freq, 1)} s.")
 print(f"\n The median window is of size {np.median([len(s) for s in X])}")
 
 def pad_signal(signal, target_len, fill, val=0):
+
     '''
     Returns a truncated signal of size equal to target_len, filled with zeros in when original signal is shorter than the targeted one.
     '''
     if len(signal) >= target_len:
-        return signal[:target_len]        
+        return signal[:target_len]      
     else:
-        if fill==True:
+        if fill:
             padded = np.full(target_len, val, dtype=signal.dtype)
-            padded[:len(signal)] = signal     
+            padded[:len(signal)] = signal    
             return padded
         else:
             return None
 
 
 def compute_mean_std(x):
+
     x = np.hstack(x)
-    return (np.mean(x).astype(np.float32),
-           np.std(x).astype(np.float32))
+    return (np.mean(x).astype(np.float32), np.std(x).astype(np.float32))
 
 def process_x(x):
+
     mean, std = compute_mean_std(x)
-    x = (x - mean) /std
+    x = (x - mean) / std
     return x
 
 # Getting X and Y
-X_pad=np.array([pad_signal(s,chosen_window_size,True,0) for s in X])
-classes_str=np.unique(Y)
-class_to_int = {c:i for i,c in enumerate(classes_str)}
+X_pad = np.array([pad_signal(s, chosen_window_size, True, 0) for s in X])
+classes_str = np.unique(Y)
+class_to_int = {c: i for i, c in enumerate(classes_str)}
 print(f"\n The conversion of the labels gives {class_to_int}.")
 Y_int = np.array([class_to_int[c] for c in Y])
-
