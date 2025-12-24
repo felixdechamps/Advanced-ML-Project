@@ -14,7 +14,7 @@ from resnet1d import MyDataset, ResNet1D
 
 RANDOM_SEED = 42
 BATCH_SIZE = 32
-LR = 0.001 
+LR = 0.001
 VAL_SPLIT = 0.15
 
 MODEL_PATH = "resnet1d.py"
@@ -92,7 +92,6 @@ for epoch in range(n_epoch):
         loss.backward()
         optimizer.step()
         step += 1
-        print(step)
         
     all_pred_train = np.concatenate(all_pred_train)
     all_pred_train_fin = np.argmax(all_pred_train, axis=1)
@@ -101,25 +100,28 @@ for epoch in range(n_epoch):
     
     # Test
     model.eval()
+    tot_loss = 0.0
     all_predictions = []  # outputs
     with torch.no_grad():
         for batch in test_loader:
             input_x, input_y = tuple(t.to(device) for t in batch)
             pred = model(input_x)
+            loss_test = loss_func(pred, input_y)
+            tot_loss += loss_test.item()
             all_predictions.append(pred.cpu().data.numpy())
-    scheduler.step(epoch)  # ? je ne sais pas si c'est cela qu'il faut mettre
+    
+    tot_loss /= len(test_loader)
+    scheduler.step(tot_loss)
+
     all_predictions = np.concatenate(all_predictions)
     all_pred = np.argmax(all_predictions, axis=1)
     report = classification_report(y_test, all_pred, output_dict=True)
     print(confusion_matrix(y_test, all_pred))
     f1_score = (report['0']['f1-score'] + report['1']['f1-score'] + report['2']['f1-score'] + report['3']['f1-score'])/4
-    print('F1/f1_score', f1_score)
+    print(f"\n Epoch {epoch} F1/f1_score {f1_score}")
     f1_score_list.append(f1_score)
-
 
 plt.plot(f1_score_list)
 plt.xlabel("Epoch")
 plt.ylabel("F1-score")
 plt.show()
-
-        
