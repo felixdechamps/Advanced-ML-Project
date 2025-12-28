@@ -305,3 +305,11 @@ class ResNet1D(nn.Module):
             print('softmax', out.shape)
 
         return out
+
+# def prunable_layers(self):
+        # return [
+        # name for name, param in self.named_parameters()
+        # if "weight" in name and "bn" not in name
+    # ]
+    def prunable_layers_names(self):
+        return [name for name, param in self.named_parameters() if (name.endswith(".weight") and "bn" not in name)]

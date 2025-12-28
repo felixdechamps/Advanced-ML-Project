@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torchsummary import summary
 
 from main_Aurane_py import X_pad, Y_int, process_x
-from resnet1d import MyDataset, ResNet1D
+from resnet1d_Aurane import MyDataset, ResNet1D
 
 # Parameters
 
