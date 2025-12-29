@@ -209,3 +209,8 @@ __marimo__/
 
 physionet.org/
 training2017/
+sample2017/
+data/REFERENCE-v3.csv
+data/RECORDS.txt
+data/
+runs/
