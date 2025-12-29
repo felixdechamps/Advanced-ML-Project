@@ -1,0 +1,7 @@
+matplotlib
+scipy
+tqdm
+scikit-learn
+tensorboard
+tensorboardX
+torchsummary
