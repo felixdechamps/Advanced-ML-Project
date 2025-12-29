@@ -11,3 +11,4 @@ unzip sample2017.zip
 curl -O $url/REFERENCE-v3.csv
 curl -O $url/RECORDS
 
+pip install -r requirements.txt
