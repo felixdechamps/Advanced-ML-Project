@@ -16,6 +16,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
+
 class MyDataset(Dataset):
     def __init__(self, data, label):
         self.data = data
@@ -26,7 +27,8 @@ class MyDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
-    
+
+
 class MyConv1dPadSame(nn.Module):
     """
     extend nn.Conv1d to support SAME padding
@@ -111,7 +113,7 @@ class BasicBlock(nn.Module):
         # the first conv
         self.bn1 = nn.BatchNorm1d(in_channels)
         self.relu1 = nn.ReLU()
-        self.do1 = nn.Dropout(p=0.5)
+        # self.do1 = nn.Dropout(p=0.5)
         self.conv1 = MyConv1dPadSame(
             in_channels=in_channels, 
             out_channels=out_channels, 
@@ -122,7 +124,7 @@ class BasicBlock(nn.Module):
         # the second conv
         self.bn2 = nn.BatchNorm1d(out_channels)
         self.relu2 = nn.ReLU()
-        self.do2 = nn.Dropout(p=0.5)
+        self.do2 = nn.Dropout(p=0.2)
         self.conv2 = MyConv1dPadSame(
             in_channels=out_channels, 
             out_channels=out_channels, 
@@ -142,8 +144,8 @@ class BasicBlock(nn.Module):
             if self.use_bn:
                 out = self.bn1(out)
             out = self.relu1(out)
-            if self.use_do:
-                out = self.do1(out)
+            # if self.use_do:
+            #     out = self.do1(out)
         out = self.conv1(out)
         
         # the second conv

@@ -7,7 +7,7 @@ from collections import Counter
 from tqdm import tqdm
 
 
-def preprocess_physionet():
+def preprocess_physionet(mode="sample"):
     """
     download the raw data from https://physionet.org/content/challenge-2017/1.0.0/, 
     and put it in ../data/challenge2017/
@@ -16,24 +16,46 @@ def preprocess_physionet():
     """
 
     # read label
-    label_df = pd.read_csv('./data/REFERENCE-v3.csv', header=None)
-    label = label_df.iloc[:, 1].values
-    print(Counter(label))
+    if mode == "sample":
+        label_df = pd.read_csv('./data/sample2017/answers.txt', sep=',', header=None)
+        label = label_df.iloc[:, 1].values
+        print(Counter(label))
 
-    # read data
-    all_data = []
-    filenames = pd.read_csv('./data/RECORDS', header=None)
-    filenames = filenames.iloc[:, 0].values
-    print(filenames)
-    for filename in tqdm(filenames):
-        mat = scipy.io.loadmat('./data/training2017/{0}.mat'.format(filename))
-        mat = np.array(mat['val'])[0]
-        all_data.append(mat)
-    all_data = np.array(all_data, dtype=object)
+        # read data
+        all_data = []
+        filenames = pd.read_csv('./data/sample2017/validation/RECORDS', header=None)
+        filenames = filenames.iloc[:, 0].values
+        print(filenames)
+        for filename in tqdm(filenames):
+            mat = scipy.io.loadmat('./data/sample2017/validation/{0}.mat'.format(filename))
+            mat = np.array(mat['val'])[0]
+            all_data.append(mat)
+        all_data = np.array(all_data, dtype=object)
 
-    res = {'data': all_data, 'label': label}
-    with open('./data/challenge2017.pkl', 'wb') as fout:
-        pickle.dump(res, fout)
+        res = {'data': all_data, 'label': label}
+        with open('./data/sample_challenge2017.pkl', 'wb') as fout:
+            pickle.dump(res, fout)
+    elif mode == "full":
+        label_df = pd.read_csv('./data/REFERENCE-v3.csv', header=None)
+        label = label_df.iloc[:, 1].values
+        print(Counter(label))
+
+        # read data
+        all_data = []
+        filenames = pd.read_csv('./data/training2017/RECORDS', header=None)
+        filenames = filenames.iloc[:, 0].values
+        print(filenames)
+        for filename in tqdm(filenames):
+            mat = scipy.io.loadmat('./data/training2017/{0}.mat'.format(filename))
+            mat = np.array(mat['val'])[0]
+            all_data.append(mat)
+        all_data = np.array(all_data, dtype=object)
+
+        res = {'data': all_data, 'label': label}
+        with open('./data/challenge2017.pkl', 'wb') as fout:
+            pickle.dump(res, fout)
+    else:
+        print("PLEASE SELECT A MODE (sample or full)")
 
 
 def slide_and_cut(X, Y, window_size, stride, output_pid=False, datatype=4):
@@ -68,11 +90,18 @@ def slide_and_cut(X, Y, window_size, stride, output_pid=False, datatype=4):
         return np.array(out_X), np.array(out_Y)
 
 
-def read_data_physionet_4(window_size=3000, stride=500):
+def read_data_physionet_4(mode="sample", window_size=3000, stride=500):
 
     # read pkl
-    with open('./data/challenge2017.pkl', 'rb') as fin:
-        res = pickle.load(fin)
+    if mode == "sample":
+        with open('./data/sample_challenge2017.pkl', 'rb') as fin:
+            res = pickle.load(fin)
+    elif mode == "full":
+        with open('./data/challenge2017.pkl', 'rb') as fin:
+            res = pickle.load(fin)
+    else:
+        print("PLEASE SELECT A MODE (sample or full)")
+
     # scale data
     all_data = res['data']
     for i in range(len(all_data)):
