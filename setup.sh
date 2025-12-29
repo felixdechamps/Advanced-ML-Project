@@ -9,6 +9,7 @@ unzip training2017.zip
 curl -O $url/sample2017.zip
 unzip sample2017.zip
 curl -O $url/REFERENCE-v3.csv
-curl -O $url/RECORDS
+
+cd ..
 
 pip install -r requirements.txt
