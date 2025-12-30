@@ -102,7 +102,7 @@ def test_dataset_loading():
         import os
         
         # Check if data directory exists
-        data_dir = './data/physionet2017'
+        data_dir = './data/'
         if not os.path.exists(data_dir):
             print(f"  ⚠ Data directory not found: {data_dir}")
             print(f"  Please download PhysioNet 2017 dataset first")
@@ -110,14 +110,14 @@ def test_dataset_loading():
             return False
         
         # Check for required files
-        ref_file = os.path.join(data_dir, 'REFERENCE.csv')
+        ref_file = os.path.join(data_dir, 'REFERENCE-v3.csv')
         if not os.path.exists(ref_file):
-            print(f"  ⚠ REFERENCE.csv not found in {data_dir}")
+            print(f"  ⚠ REFERENCE-v3.csv not found in {data_dir}")
             return False
         
         # Try to load dataset
         dataset = PhysioNet2017Dataset(
-            data_dir=data_dir,
+            data_dir=data_dir+'training2017/',
             target_length=9000
         )
         

@@ -67,6 +67,6 @@ class Config:
     seed = 42
     
     # Paths
-    data_dir = './data/physionet2017'
+    data_dir = './data/training2017'
     model_save_path = './checkpoints'
     log_dir = './logs'

@@ -60,7 +60,6 @@ class Trainer:
             mode='min',
             factor=config.lr_factor,  # 0.1
             patience=config.lr_patience,  # 2 epochs
-            verbose=True
         )
         
         # Training tracking
