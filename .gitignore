@@ -8,3 +8,5 @@ venv/
 venv/
 data/sample2017/
 data/training2017/
+results/
+checkpoints/
