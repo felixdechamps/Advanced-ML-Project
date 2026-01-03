@@ -31,6 +31,7 @@ class Preproc:
 
     def __init__(self, ecg, labels):
         self.mean, self.std = compute_mean_std(ecg)
+        print("self.mean : ", self.mean, " self.std : ", self.std)
         self.classes = sorted(set(l for label in labels for l in label))
         print("self.classes : ", self.classes)
         self.int_to_class = dict( zip(range(len(self.classes)), self.classes))
@@ -93,6 +94,134 @@ def load_ecg(record):
 
     trunc_samp = STEP * int(len(ecg) / STEP)
     return ecg[:trunc_samp]
+
+
+
+"""Definition of Dataloader"""
+
+class DataLoader:
+    """
+    Dataloader Class
+    Defines an iterable batch-sampler over a given dataset
+    """
+    def __init__(self, ecgs, labels, preproc, batch_size=1, shuffle=False, drop_last=False):
+        """
+        :param dataset: dataset from which to load the data
+        :param batch_size: how many samples per batch to load
+        :param shuffle: set to True to have the data reshuffled at every epoch
+        :param drop_last: set to True to drop the last incomplete batch,
+            if the dataset size is not divisible by the batch size.
+            If False and the size of dataset is not divisible by the batch
+            size, then the last batch will be smaller.
+        """
+        self.ecgs = ecgs
+        self.labels = labels
+        self.prepoc = preproc
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.drop_last = drop_last
+
+    def __iter__(self):
+        ########################################################################
+        # TODO:                                                                #
+        # Define an iterable function that samples batches from the dataset.   #
+        # Each batch should be a dict containing numpy arrays of length        #
+        # batch_size (except for the last batch if drop_last=True)             #
+        # Hints:                                                               #
+        #   - np.random.permutation(n) can be used to get a list of all        #
+        #     numbers from 0 to n-1 in a random order                          #
+        #   - To load data efficiently, you should try to load only those      #
+        #     samples from the dataset that are needed for the current batch.  #
+        #     An easy way to do this is to build a generator with the yield    #
+        #     keyword, see https://wiki.python.org/moin/Generators             #
+        #   - Have a look at the "DataLoader" notebook first. This function is #
+        #     supposed to combine the functions:                               #
+        #       - combine_batch_dicts                                          #
+        #       - batch_to_numpy                                               #
+        #       - build_batch_iterator                                         #
+        #     in section 1 of the notebook.                                    #
+        ########################################################################
+        
+        num_examples = len(self.ecgs)
+        examples = zip(self.ecgs, self.labels)
+        examples = sorted(examples, key=lambda x: x[0].shape[0])
+        end = num_examples - self.batch_size + 1
+        batches = [examples[i:i+self.batch_size] for i in range(0, end, self.batch_size)]
+        random.shuffle(batches)
+        while True:
+            for batch in batches:
+                x, y = zip(*batch)
+                yield preproc.process(x, y)
+
+        ########################################################################
+        #                           END OF YOUR CODE                           #
+        ########################################################################
+
+    def __len__(self):
+        length = None
+        ########################################################################
+        # TODO:                                                                #
+        # Return the length of the dataloader                                  #
+        # Hint: this is the number of batches you can sample from the dataset. #
+        # Don't forget to check for drop last (self.drop_last)!                #
+        ########################################################################
+        
+
+        pass
+
+        ########################################################################
+        #                           END OF YOUR CODE                           #
+        ########################################################################
+        return length
+
+def build_batches(dataset, batch_size):
+    batches = []  # list of all mini-batches
+    batch = []  # current mini-batch
+    for i in range(len(dataset)):
+        batch.append(dataset[i])
+        if len(batch) == batch_size:  # if the current mini-batch is full,
+            batches.append(batch)  # add it to the list of mini-batches,
+            batch = []  # and start a new mini-batch
+    return batches
+
+
+def combine_batch_dicts(batch):
+    batch_dict = {}
+    for data_dict in batch:
+        for key, value in data_dict.items():
+            if key not in batch_dict:
+                batch_dict[key] = []
+            batch_dict[key].append(value)
+    return batch_dict
+
+def batch_to_numpy(batch):
+    numpy_batch = {}
+    for key, value in batch.items():
+        numpy_batch[key] = np.array(value)
+    return numpy_batch
+
+def build_batch_iterator(dataset, batch_size, shuffle=True):
+    if shuffle:
+        index_iterator = iter(np.random.permutation(len(dataset)))  # define indices as iterator
+    else:
+        index_iterator = iter(range(len(dataset)))  # define indices as iterator
+
+    batch = []
+    for index in index_iterator:  # iterate over indices using the iterator
+        batch.append(dataset[index])
+        if len(batch) == batch_size:
+            yield batch  # use yield keyword to define a iterable generator
+            batch = []
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     data_json = "examples/cinc17/train.json"

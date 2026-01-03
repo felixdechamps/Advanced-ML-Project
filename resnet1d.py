@@ -264,6 +264,7 @@ class ResNet1D(nn.Module):
         self.final_relu = nn.ReLU(inplace=True)
         # self.do = nn.Dropout(p=0.5)
         self.dense = nn.Linear(out_channels, n_classes)
+        # self.dense = nn.Conv1d(out_channels, n_classes, kernel_size=1)
         # self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):

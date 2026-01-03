@@ -6,3 +6,4 @@ tqdm
 scipy
 counter
 scikit-learn
+torchsummary
