@@ -311,5 +311,19 @@ class ResNet1D(nn.Module):
         # name for name, param in self.named_parameters()
         # if "weight" in name and "bn" not in name
     # ]
+    @property
     def prunable_layers_names(self):
         return [name for name, param in self.named_parameters() if (name.endswith(".weight") and "bn" not in name)]
+    
+    @property
+    def output_layer_names(self):
+        """A list of the names of the Tensors of the output layer of this model."""
+        return ["dense"]
+    
+    @property
+    def loss_criterion(self):
+        return nn.CrossEntropyLoss()
+    
+    def save(self, save_location, save_step):
+        torch.save(self.state_dict(), f"{save_location}/resnet1d_step_{save_step}.pt")
+

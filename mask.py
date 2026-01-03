@@ -27,7 +27,7 @@ class Mask(dict):
        Initialize a mask filled with ones
         '''
         mask = Mask()
-        for name in model.prunable_layers_names():
+        for name in model.prunable_layers_names:
             mask[name] = torch.ones(list(model.state_dict()[name].shape)) 
         return mask
 
@@ -37,7 +37,7 @@ class Mask(dict):
 
         # Save the mask
         mask_path = os.path.join(output_location, "mask.pt")
-        torch.save({k: v.cpu().int() for k, v in self.items()},mask_path)
+        torch.save({k: v.cpu().int() for k, v in self.items()}, mask_path)
 
         # Save the sparsity report
         total_weights = np.sum([v.size for v in self.numpy().values()]).item()
@@ -46,6 +46,7 @@ class Mask(dict):
         report_path = os.path.join(output_location, "sparsity.json")
         with open(report_path, "w") as f:
             f.write(json.dumps(report, indent=4))
+
     def load(output_location):
         mask_path = os.path.join(output_location, "mask.pt")
         if not os.path.exists(mask_path):
