@@ -79,7 +79,7 @@ class SmartBatchSampler(Sampler):
 
 # --- 3. Le Collate (Identique à la version optimisée) ---
 class ECGCollate:
-    def __init__(self, pad_val_x, num_classes, pad_val_y=3):
+    def __init__(self, pad_val_x, num_classes, pad_val_y=-100):
         self.pad_val_x = pad_val_x
         self.pad_val_y = pad_val_y
         self.num_classes = num_classes

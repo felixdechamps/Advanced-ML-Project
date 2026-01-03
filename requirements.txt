@@ -7,3 +7,6 @@ scipy
 counter
 scikit-learn
 torchsummary
+tensorboard
+tensorflow
+keras

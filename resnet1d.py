@@ -263,8 +263,8 @@ class ResNet1D(nn.Module):
         self.final_bn = nn.BatchNorm1d(out_channels)
         self.final_relu = nn.ReLU(inplace=True)
         # self.do = nn.Dropout(p=0.5)
-        self.dense = nn.Linear(out_channels, n_classes)
-        # self.dense = nn.Conv1d(out_channels, n_classes, kernel_size=1)
+        # self.dense = nn.Linear(out_channels, n_classes)
+        self.dense = nn.Conv1d(out_channels, n_classes, kernel_size=1)
         # self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
@@ -294,7 +294,7 @@ class ResNet1D(nn.Module):
         if self.use_bn:
             out = self.final_bn(out)
         out = self.final_relu(out)
-        out = out.mean(-1)
+        #out = out.mean(-1)
         if self.verbose:
             print('final pooling', out.shape)
         # out = self.do(out)
