@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pip install -r requirements.txt
+
 url=https://physionet.org/files/challenge-2017/1.0.0/
 
 mkdir data && cd data

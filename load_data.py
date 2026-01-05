@@ -4,6 +4,50 @@ import torch.nn.functional as F
 import torch.nn.utils.rnn as rnn_utils
 import numpy as np
 import random
+import os
+import json
+import scipy.io as sio
+import tqdm
+
+
+
+def load_ecg(record, step):
+    """
+    taken from https://github.com/awni/ecg/blob/master/ecg/load.py
+
+    Outputs the ecg sequence truncated to the closer multiple of step (eg 256).
+    """
+    if os.path.splitext(record)[1] == ".npy":
+        ecg = np.load(record)
+    elif os.path.splitext(record)[1] == ".mat":
+        ecg = sio.loadmat(record)['val'].squeeze()
+    else: # Assumes binary 16 bit integers
+        with open(record, 'r') as fid:
+            ecg = np.fromfile(fid, dtype=np.int16)
+
+    trunc_samp = step * int(len(ecg) / step)
+    return ecg[:trunc_samp]
+
+
+
+def load_dataset(data_json, step=256):
+    """
+    taken from https://github.com/awni/ecg/blob/master/ecg/load.py
+
+    Outputs :
+            - ecgs : List of truncated ecg sequences
+                eg of sequence : [  72   83   93 ... -136 -133 -131] (length 8960=35*256)
+            - labels : List of List of labels for each intra ecg sequence of length 256
+            eg of label : ['N', 'N', 'N', 'N', ..., 'N', 'N', 'N', 'N'] (length 35)
+    """
+    with open(data_json, 'r') as fid:
+        data = [json.loads(l) for l in fid]
+    labels = []; ecgs = []
+    for d in tqdm.tqdm(data):
+        labels.append(d['labels'])
+        ecgs.append(load_ecg(d['ecg'], step))
+    return ecgs, labels
+
 
 # --- 1. Le Dataset (Identique à la version optimisée) ---
 class ECGDataset(Dataset):
