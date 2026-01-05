@@ -9,7 +9,7 @@ from collections import Counter
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 from sklearn.metrics import classification_report
-
+import typing
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -306,3 +306,14 @@ class ResNet1D(nn.Module):
             print('softmax', out.shape)
 
         return out
+
+    @property
+    def prunable_layer_names(self) -> typing.List[str]:
+        """A list of the names of Tensors of this model that are valid for pruning.
+
+        By default, only the weights of convolutional and linear layers are prunable.
+        """
+
+        return [name + '.weight' for name, module in self.named_modules() if
+                isinstance(module, torch.nn.modules.conv.Conv1d) or
+                isinstance(module, torch.nn.modules.linear.Linear)]
