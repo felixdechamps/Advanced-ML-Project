@@ -71,3 +71,34 @@ class Mask(dict):
     @property
     def density(self):
         return 1 - self.sparsity
+
+    def layerwise_sparsity(self):
+        """
+        Renvoie un dictionnaire {nom_layer: sparsité} pour chaque couche.
+        La sparsité est un float entre 0.0 (dense) et 1.0 (vide).
+        """
+        layer_sparsities = {}
+        for k, v in self.items():
+            # v est un Tensor PyTorch contenant des 0 et des 1
+            total_params = v.numel()  # Nombre total d'éléments dans le tenseur
+            unpruned_params = v.sum().item()  # Somme des 1 (éléments gardés)
+            
+            # Calcul : 1 - (gardés / total)
+            sparsity = 1.0 - (unpruned_params / total_params)
+            layer_sparsities[k] = sparsity
+            
+        return layer_sparsities
+
+    def layerwise_remaining_params(self):
+        """
+        Renvoie un dictionnaire {nom_layer: nombre_parametres_restants} pour chaque couche.
+        Utile pour reproduire la Figure 2 de l'article LTH-ECG.
+        """
+        layer_counts = {}
+        for k, v in self.items():
+            # v est le masque (0 ou 1). La somme donne le nombre de poids actifs.
+            # on cast en int pour avoir un nombre entier propre.
+            count = int(v.sum().item())
+            layer_counts[k] = count
+            
+        return layer_counts
