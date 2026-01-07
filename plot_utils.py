@@ -1,3 +1,5 @@
+import os
+import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import clear_output
 
@@ -11,7 +13,7 @@ def plot_lth_progress(history_theta, history_f1, save_dir="plots/"):
     plt.figure(figsize=(10, 6))
     
     # Courbe de votre modèle
-    plt.plot(history_theta, history_f1, 'r-o', label='LTH-ECG (Votre Run)')
+    plt.plot(history_theta, history_f1, 'r-.', label='LTH-ECG (Votre Run)')
     
     # Benchmark du papier : F1 = 0.836 [cite: 36, 137]
     plt.axhline(y=0.836, color='black', linestyle='--', label='Benchmark Papier (0.836)')
@@ -39,7 +41,7 @@ def plot_lth_progress(history_theta, history_f1, save_dir="plots/"):
     print(f"Graphique mis à jour et sauvegardé dans : {save_path}")
 
 
-def plot_layerwise_remaining_params(mask,save_dir="plots/") : 
+def plot_layerwise_remaining_params(model, mask, save_dir="plots/"): 
     # Création du dossier si inexistant
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, "layerwise_remaining_params_plot.png")
