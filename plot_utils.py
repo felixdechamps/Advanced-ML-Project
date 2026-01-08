@@ -13,7 +13,7 @@ def plot_lth_progress(history_theta, history_f1, save_dir="plots/"):
     plt.figure(figsize=(10, 6))
     
     # Courbe de votre modèle
-    plt.plot(history_theta, history_f1, 'r-.', label='LTH-ECG (Votre Run)')
+    plt.plot(history_theta, history_f1, 'r-.', label='LTH-ECG (Trained & pruned model)')
     
     # Benchmark du papier : F1 = 0.836 [cite: 36, 137]
     plt.axhline(y=0.836, color='black', linestyle='--', label='Benchmark Papier (0.836)')
