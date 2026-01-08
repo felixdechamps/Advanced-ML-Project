@@ -307,6 +307,23 @@ class ResNet1D(nn.Module):
 
         return out
 
+    def layers_name(self):
+        '''
+        Returns:
+            list[str]: a list of all the names of the layers of the model.
+        '''
+        return [name for name, _ in self.named_modules()]
+    
+    def get_layer(self, layer_name: str):
+        '''
+        Returns :
+            Layer : the associated layer to layer_name
+        '''
+        layers = dict(self.named_modules())
+        if layer_name not in layers:
+            raise LookupError(f"Layer '{layer_name}' does not exist.")
+        return layers[layer_name]
+
     @property
     def prunable_layer_names(self) -> typing.List[str]:
         """A list of the names of Tensors of this model that are valid for pruning.

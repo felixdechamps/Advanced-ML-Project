@@ -8,8 +8,7 @@ import os
 import json
 import scipy.io as sio
 import tqdm
-
-
+from pathlib import Path
 
 def load_ecg(record, step):
     """
@@ -42,8 +41,12 @@ def load_dataset(data_json, step=256):
     """
     with open(data_json, 'r') as fid:
         data = [json.loads(l) for l in fid]
-    labels = []; ecgs = []
+    labels = []
+    ecgs = []
     for d in tqdm.tqdm(data):
+        # ecg_file = Path(d['ecg']).name 
+        # ecg_path = data_dir / ecg_file
+        # ecg_path = root / d['ecg']
         labels.append(d['labels'])
         ecgs.append(load_ecg(d['ecg'], step))
     return ecgs, labels
