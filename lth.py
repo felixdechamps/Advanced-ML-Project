@@ -5,13 +5,13 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader
 from torchsummary import summary
-
+from tqdm import tqdm
 
 from resnet1d_Aurane import ResNet1D
 from mask import Mask
 from sparse_global import prune
 from pruning import PrunedModel
-
+from main_Aurane_py import X_pad, Y_int, process_x
 
 
 def reset_to_initial_weights(model: ResNet1D, initial_state_dict: dict, mask: Mask):
@@ -98,6 +98,79 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, epochs, d
     return metrics
 
 
+def create_tqdm_bar(iterable, desc):
+    return tqdm(enumerate(iterable),total=len(iterable), ncols=150, desc=desc)
+
+
+def train_model_2(model, train_loader, val_loader, loss_func, tb_logger, device, epochs=10, name="default"):
+    """
+    Train the classifier for a number of epochs.
+    """
+    loss_cutoff = len(train_loader) // 10
+    optimizer = torch.optim.Adam(model.parameters(), 0.001)
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                                            mode='min', 
+                                                            factor=0.1, # like in Hannun et al.
+                                                            patience=2 # 2 in Hannun et al. "two consecutive epochs"
+                                                            )
+    for epoch in range(epochs):
+
+        # Training stage, where we want to update the parameters.
+        model.train()  # Set the model to training mode
+
+        training_loss = []
+        validation_loss = []
+
+        # Create a progress bar for the training loop.
+        training_loop = create_tqdm_bar(train_loader, desc=f'Training Epoch [{epoch + 1}/{epochs}]')
+        for train_iteration, batch in training_loop:
+            optimizer.zero_grad() # Reset the gradients - VERY important! Otherwise they accumulate.
+            ecgs, labels = batch # Get the images and labels from the batch, in the fashion we defined in the dataset and dataloader.
+            ecgs, labels = ecgs.to(device), labels.to(device) # Send the data to the device (GPU or CPU) - it has to be the same device as the model.
+
+
+            pred = model(ecgs) # Stage 1: Forward().
+            loss = loss_func(pred, labels) # Compute the loss over the predictions and the ground truth.
+            loss.backward()  # Stage 2: Backward().
+            optimizer.step() # Stage 3: Update the parameters.
+            # scheduler.step() # Update the learning rate.
+
+
+            training_loss.append(loss.item())
+            training_loss = training_loss[-loss_cutoff:]
+
+            # Update the progress bar.
+            training_loop.set_postfix(curr_train_loss = "{:.8f}".format(np.mean(training_loss)),
+                                      lr = "{:.8f}".format(optimizer.param_groups[0]['lr'])
+            )
+
+            # Update the tensorboard logger.
+            #tb_logger.add_scalar(f'classifier_{name}/train_loss', loss.item(), epoch * len(train_loader) + train_iteration)
+
+        # Validation stage, where we don't want to update the parameters. Pay attention to the classifier.eval() line
+        # and "with torch.no_grad()" wrapper.
+        model.eval()
+        val_loop = create_tqdm_bar(val_loader, desc=f'Validation Epoch [{epoch + 1}/{epochs}]')
+
+        with torch.no_grad():
+            for val_iteration, batch in val_loop:
+                ecgs, labels = batch
+                ecgs, labels = ecgs.to(device), labels.to(device)
+
+                pred = model(ecgs)
+                loss = loss_func(pred, labels)
+                validation_loss.append(loss.item())
+                # Update the progress bar.
+                val_loop.set_postfix(val_loss = "{:.8f}".format(np.mean(validation_loss)))
+
+                # Update the tensorboard logger.
+                #tb_logger.add_scalar(f'classifier_{name}/val_loss', loss.item(), epoch * len(val_loader) + val_iteration)
+        
+        scheduler.step(np.mean(validation_loss))
+    
+    return model
+
 
 def lottery_ticket(device, model: ResNet1D, train_loader, pruning_fraction: float, rounds: int, epochs_per_round: int, layers_to_ignore: str = ""):
     '''
@@ -119,7 +192,7 @@ def lottery_ticket(device, model: ResNet1D, train_loader, pruning_fraction: floa
         pruned_model = PrunedModel(model, mask).to(device)
         optimizer = torch.optim.SGD(pruned_model.parameters(), lr=0.01, momentum=0.9) # A modifier ?
 
-        train_model(pruned_model, train_loader, optimizer, model.loss_criterion, epochs_per_round, device) # A modifier : écrire une fonction d'entraînement
+        train_model_2(pruned_model, train_loader, optimizer, model.loss_criterion, epochs_per_round, device) # A modifier : écrire une fonction d'entraînement
 
         # Prune
         mask = prune(pruning_fraction=pruning_fraction, layers_to_ignore=layers_to_ignore, trained_model=model, current_mask=mask)
@@ -130,4 +203,5 @@ def lottery_ticket(device, model: ResNet1D, train_loader, pruning_fraction: floa
         reset_to_initial_weights(model, initial_state, mask)
 
     return model, mask
+
 
