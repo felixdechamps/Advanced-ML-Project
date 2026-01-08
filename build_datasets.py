@@ -43,7 +43,6 @@ def make_json(save_path, dataset):
             json.dump(datum, fid)
             fid.write('\n')
 
-
 if __name__ == "__main__":
     random.seed(2018)
 
