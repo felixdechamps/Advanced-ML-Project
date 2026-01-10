@@ -5,6 +5,18 @@ We tried here to put the lottery ticket hypothesis, introduced by Frankle and Ca
 
 ## Contents
 
+The repository is organised as follows :
+
+*
+*
+*
+*
+*
+
+## Getting started
+
+Dire comment cloner le repo, gérer les requirements tout ça.
+
 ## Loading the data 
 
 To get the data and unzip it first run in your shell :
