@@ -10,6 +10,8 @@ import scipy.io as sio
 import tqdm
 from pathlib import Path
 
+
+
 def load_ecg(record, step):
     """
     taken from https://github.com/awni/ecg/blob/master/ecg/load.py
@@ -28,7 +30,6 @@ def load_ecg(record, step):
     return ecg[:trunc_samp]
 
 
-
 def load_dataset(data_json, step=256):
     """
     taken from https://github.com/awni/ecg/blob/master/ecg/load.py
@@ -39,14 +40,14 @@ def load_dataset(data_json, step=256):
             - labels : List of List of labels for each intra ecg sequence of length 256
             eg of label : ['N', 'N', 'N', 'N', ..., 'N', 'N', 'N', 'N'] (length 35)
     """
-    with open(data_json, 'r') as fid:
+    project_root = Path(__file__).resolve().parent
+    data_root = project_root.parent
+    data_path = data_root / data_json
+    with open(data_path, 'r') as fid:
         data = [json.loads(l) for l in fid]
     labels = []
     ecgs = []
     for d in tqdm.tqdm(data):
-        # ecg_file = Path(d['ecg']).name 
-        # ecg_path = data_dir / ecg_file
-        # ecg_path = root / d['ecg']
         labels.append(d['labels'])
         ecgs.append(load_ecg(d['ecg'], step))
     return ecgs, labels
@@ -78,7 +79,7 @@ class ECGDataset(Dataset):
         return len(self.data_x)
 
     def __getitem__(self, idx):
-        # Normalisation immédiate (parallélisable)
+        # Normalizing data
         x_val = self.data_x[idx]
         x_tensor = torch.tensor(x_val, dtype=torch.float32)
         x_tensor = (x_tensor - self.mean) / self.std
@@ -87,7 +88,7 @@ class ECGDataset(Dataset):
         y_tensor = torch.tensor(y_indices, dtype=torch.long)
         return x_tensor, y_tensor
 
-# --- 2. LE NOYAU DU PROBLÈME : SmartBatchSampler ---
+
 class SmartBatchSampler(Sampler):
     """
     Reproduit la logique : 

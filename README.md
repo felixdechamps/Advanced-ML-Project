@@ -22,12 +22,12 @@ wget -N https://physionet.org/files/challenge-2017/1.0.0/training2017.zip
 unzip training2017.zip
 
 To put the data into a folder named 'data', run :
-mkdir -p Advanced-ML-Project/data
-mv training2017 Advanced-ML-Project/data/training2017
+mkdir -p data
+mv training2017 data/training2017
 
-Finally, run : 
+To get the references run also : 
 
 wget -N https://physionet.org/files/challenge-2017/1.0.0/REFERENCE-v3.csv
-mv REFERENCE-v3.csv Advanced-ML-Project/data/REFERENCE-v3.csv
+mv REFERENCE-v3.csv data/REFERENCE-v3.csv
 
 You may now run the file 'build_datasets.py' to finish putting the data under the correct form !
