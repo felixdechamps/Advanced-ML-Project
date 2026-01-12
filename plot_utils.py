@@ -13,7 +13,8 @@ def plot_lth_progress(history_theta, history_f1, save_dir="plots/"):
     plt.figure(figsize=(10, 6))
     
     # Courbe de votre modèle
-    plt.plot(history_theta, history_f1, 'r', label='LTH-ECG (Trained & pruned model)')
+    plt.plot(history_theta, history_f1, color='r',linestyle='-.', marker='.', markersize=4,
+        label='LTH-ECG (Trained & pruned model)')
     
     # Benchmark du papier : F1 = 0.836 [cite: 36, 137]
     plt.axhline(y=0.836, color='black', linestyle='--', label='Benchmark Papier (0.836)')
@@ -29,7 +30,7 @@ def plot_lth_progress(history_theta, history_f1, save_dir="plots/"):
     # --- MODIFICATION ICI ---
 
     plt.ylim(0.50, 0.95) # Zoom sur la zone d'intérêt [cite: 143-153]
-    plt.xlim(0, max(max(history_theta), 175)) # Va jusqu'à 175 comme le papier [cite: 159]
+    plt.xlim(0, max(max(history_theta), 45)) # Va jusqu'à 175 comme le papier [cite: 159]
 
     # ------------------------
 
