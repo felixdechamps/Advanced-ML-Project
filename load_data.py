@@ -49,16 +49,26 @@ def load_dataset(data_json, step=256):
     return ecgs, labels
 
 
-# --- 1. Le Dataset (Identique à la version optimisée) ---
 class ECGDataset(Dataset):
+    """
+    PyTorch Dataset for ECG sequences with normalization and label encoding.
+    """
+
     def __init__(self, x, y):
+        """
+        Args:
+            x: List of input sequences (arrays).
+            y: List of label sequences corresponding to x.
+        """
         self.data_x = x
         self.data_y = y
+        # Compute dataset mean and standard deviation
         self.mean, self.std = self._compute_mean_std(x)
         print("MEAN : ", self.mean, " STD : ", self.std)
-        # Valeur de padding optimisée : (0 - mean) / std
+        # Optimized padding value in normalized space
         self.pad_value_x_normalized = (0.0 - self.mean) / self.std
         
+        # Determine classes and create label->index mapping
         all_labels = [label for seq in y for label in seq]
         self.classes = sorted(set(all_labels))
         print("self.classes : ", self.classes)
@@ -67,15 +77,19 @@ class ECGDataset(Dataset):
         self.num_classes = len(self.classes)
 
     def _compute_mean_std(self, x):
+        """Compute mean and std over all sequences concatenated."""
         flat_x = np.hstack(x)
         return (np.mean(flat_x).astype(np.float32), 
                 np.std(flat_x).astype(np.float32))
 
     def __len__(self):
+        """Return number of sequences in the dataset."""
         return len(self.data_x)
 
     def __getitem__(self, idx):
-        # Normalisation immédiate (parallélisable)
+        """
+        Return normalized input tensor and integer-encoded label tensor for a given index.
+        """
         x_val = self.data_x[idx]
         x_tensor = torch.tensor(x_val, dtype=torch.float32)
         x_tensor = (x_tensor - self.mean) / self.std
@@ -84,56 +98,83 @@ class ECGDataset(Dataset):
         y_tensor = torch.tensor(y_indices, dtype=torch.long)
         return x_tensor, y_tensor
 
-# --- 2. LE NOYAU DU PROBLÈME : SmartBatchSampler ---
+
 class SmartBatchSampler(Sampler):
     """
-    Reproduit la logique : 
-    1. Trier les exemples par taille.
-    2. Faire des paquets (batches).
-    3. Mélanger les paquets.
+    Batch sampler that sorts sequences by length, groups them into batches, 
+    and shuffles the batches to reduce padding overhead.
     """
+
     def __init__(self, data_source, batch_size):
+        """
+        Args:
+            data_source: Dataset with attribute `data_x` containing sequences.
+            batch_size: Number of samples per batch.
+        """
         self.data_source = data_source
         self.batch_size = batch_size
         
-        # On pré-calcule les longueurs et on trie les indices
-        # data_source.data_x suppose que l'accès est direct.
-        print("Tri du dataset par longueur pour minimiser le padding...")
+        # Precompute sequence lengths and sort indices to minimize padding
+        print("Sorting dataset by length to minimize padding...")
         self.sorted_indices = sorted(
             range(len(data_source)), 
             key=lambda i: len(data_source.data_x[i])
         )
 
     def __iter__(self):
-        # 1. On découpe les indices triés en paquets de taille batch_size
+        """Yield batches of indices, with batches shuffled."""
+        # Split sorted indices into batches
         batches = [
             self.sorted_indices[i:i + self.batch_size]
             for i in range(0, len(self.sorted_indices), self.batch_size)
         ]
         
-        # 2. On mélange l'ordre des batches (comme 'random.shuffle(batches)' dans ton code)
+        # Shuffle the order of batches
         random.shuffle(batches)
         
-        # 3. On yield chaque batch (qui est une liste d'indices)
+        # Yield each batch
         for batch in batches:
             yield batch
 
     def __len__(self):
+        """Return the total number of batches."""
         return (len(self.data_source) + self.batch_size - 1) // self.batch_size
 
-# --- 3. Le Collate (Identique à la version optimisée) ---
+
 class ECGCollate:
+    """
+    Collate function to pad variable-length ECG sequences and labels for batching.
+    """
+
     def __init__(self, pad_val_x, num_classes, pad_val_y=-100):
+        """
+        Args:
+            pad_val_x: Value used to pad input sequences.
+            num_classes: Number of classes for labels.
+            pad_val_y: Value used to pad label sequences (default: -100 for ignore_index).
+        """
         self.pad_val_x = pad_val_x
         self.pad_val_y = pad_val_y
         self.num_classes = num_classes
 
     def __call__(self, batch):
+        """
+        Pad sequences and labels in the batch to the same length.
+
+        Args:
+            batch: List of tuples (x_tensor, y_tensor) from the dataset.
+
+        Returns:
+            x_final: Padded input tensor with shape (batch, 1, seq_len).
+            y_padded: Padded label tensor with shape (batch, seq_len).
+        """
         xs, ys = zip(*batch)
-        # Ici, xs contient des séquences de longueurs très proches grâce au Sampler !
+
+        # Pad sequences; sequences are already roughly similar in length due to SmartBatchSampler
         x_padded = rnn_utils.pad_sequence(xs, batch_first=True, padding_value=self.pad_val_x)
         y_padded = rnn_utils.pad_sequence(ys, batch_first=True, padding_value=self.pad_val_y)
         
+        # Add channel dimension for input
         x_final = x_padded.unsqueeze(-2)
-        #y_onehot = F.one_hot(y_padded, num_classes=self.num_classes).float()
         return x_final, y_padded
+

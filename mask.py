@@ -1,15 +1,9 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
+# this codelines are adapted from Frankle's open_lth GitHub Repository:
+# https://github.com/facebookresearch/open_lth/blob/main/pruning/mask.py
 
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-
-# import json
 import numpy as np
 import torch
-
-# from foundations import paths
 from resnet1d import ResNet1D
-# from platforms.platform import get_platform
 
 
 class Mask(dict):
@@ -36,27 +30,6 @@ class Mask(dict):
             mask[name] = torch.ones(list(model.state_dict()[name].shape))
         return mask
 
-    # def save(self, output_location):
-    #     if not get_platform().is_primary_process: return
-    #     if not get_platform().exists(output_location): get_platform().makedirs(output_location)
-    #     get_platform().save_model({k: v.cpu().int() for k, v in self.items()}, paths.mask(output_location))
-
-    #     # Create a sparsity report.
-    #     total_weights = np.sum([v.size for v in self.numpy().values()]).item()
-    #     total_unpruned = np.sum([np.sum(v) for v in self.numpy().values()]).item()
-    #     with get_platform().open(paths.sparsity_report(output_location), 'w') as fp:
-    #         fp.write(json.dumps({'total': float(total_weights), 'unpruned': float(total_unpruned)}, indent=4))
-
-    # @staticmethod
-    # def load(output_location):
-    #     if not Mask.exists(output_location):
-    #         raise ValueError('Mask not found at {}'.format(output_location))
-    #     return Mask(get_platform().load_model(paths.mask(output_location)))
-
-    # @staticmethod
-    # def exists(output_location):
-    #     return get_platform().exists(paths.mask(output_location))
-
     def numpy(self):
         return {k: v.cpu().numpy() for k, v in self.items()}
 
@@ -74,16 +47,16 @@ class Mask(dict):
 
     def layerwise_sparsity(self):
         """
-        Renvoie un dictionnaire {nom_layer: sparsité} pour chaque couche.
-        La sparsité est un float entre 0.0 (dense) et 1.0 (vide).
+        Return a dictionary {layer_name: sparsity} for each layer.
+        Sparsity is a float between 0.0 (dense) and 1.0 (empty).
         """
         layer_sparsities = {}
         for k, v in self.items():
-            # v est un Tensor PyTorch contenant des 0 et des 1
-            total_params = v.numel()  # Nombre total d'éléments dans le tenseur
-            unpruned_params = v.sum().item()  # Somme des 1 (éléments gardés)
+            # v is a PyTorch Tensor containing 0s and 1s
+            total_params = v.numel()  # Total number of elements in the tensor
+            unpruned_params = v.sum().item()  # Sum of 1s (kept elements)
             
-            # Calcul : 1 - (gardés / total)
+            # Computation: 1 - (kept / total)
             sparsity = 1.0 - (unpruned_params / total_params)
             layer_sparsities[k] = sparsity
             
@@ -91,13 +64,13 @@ class Mask(dict):
 
     def layerwise_remaining_params(self):
         """
-        Renvoie un dictionnaire {nom_layer: nombre_parametres_restants} pour chaque couche.
-        Utile pour reproduire la Figure 2 de l'article LTH-ECG.
+        Returns a dictionary {layer_name: number_of_remaining_parameters} for each layer.
+        Useful for reproducing Figure 2 of the LTH-ECG paper.
         """
         layer_counts = {}
         for k, v in self.items():
-            # v est le masque (0 ou 1). La somme donne le nombre de poids actifs.
-            # on cast en int pour avoir un nombre entier propre.
+            # v is the mask (0 or 1). The sum gives the number of active weights.
+            # Cast to int to get a clean integer value.
             count = int(v.sum().item())
             layer_counts[k] = count
             
