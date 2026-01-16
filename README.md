@@ -1,14 +1,83 @@
-# Advanced-ML-Project
+# Advanced ML Project — ECG Classification with Lottery Ticket Hypothesis
 
-We are planning to work on the Lottery Ticket Hypothesis (LTH), introduced by Frankle and Carbin in the paper « The Lottery Ticket Hypothesis : Finding sparse, trainable neural networks » (2019), which was mentioned in your guidelines document. Precisely, the lottery ticket hypothesis states that randomly-initialized, dense neural networks contain subnetworks, called winning tickets, that when trained in isolation, reach test accuracy comparable to the original network trained in a similar number of iterations. In order to find such winning tickets, the authors use iterative pruning with the particularity that, at the end of each iterations, weights are rewound to their pre-trained values. 
+This project explores the **Lottery Ticket Hypothesis (LTH)** in the context of **ECG (electrocardiogram) classification**.  
+LTH states that large randomly-initialized neural networks contain **sparse subnetworks** that can be trained in isolation to achieve performance comparable to the original dense model.  
 
-Our aim is to apply this method to find winning tickets in ECG (Electrocardiogram) classification neural networks. We have indeed been inspired by the article « LTH-ECG: Lottery Ticket Hypothesis-based Deep Learning Model Compression for Atrial Fibrillation Detection from Single Lead ECG On Wearable and Implantable Devices » (Sahu et al., 2022), in which the authors try to find winning tickets using the PhysioNet Computing in Cardiology (CinC) Challenge 2017 dataset, comprising ECG recordings.
+The goal is to reproduce iterative pruning experiments, compare **weight rewinding** and **fine-tuning**, and evaluate different pruning strategies using ECG data from the PhysioNet CinC Challenge 2017 dataset.
 
-First, we would like to reproduce the finding of a winning ticket in the state-of-the art model as described in the latter article, by looking at the model’s accuracy with respect to the pruning level applied, using both retraining techniques fine tuning (iteratively pruning without rewinding weights nor learning rate) and Frankle and Carbin’s weight rewinding.
-Then, based on the article « Comparing rewinding and fine-tuning in neural networks » (Renda et al., 2020), we also plan to implement the learning-rate rewinding method and compare the results with those obtained previously. If we have the time and succeed in finding winning tickets, we also intend to implement the late-resetting rewinding method introduced in the article « Stabilizing the Lottery Ticket Hypothesis » (Frankle et al., 2020), which is useful when it is difficult to find winning tickets. 
+---
 
-To summarize : Therefore, the first step would be to reproduce the main part of the paper (i.e. the comparison of fine tuning and LTH’s weight rewinding), and the next steps would consist in comparing with other re-initialisation techniques mentioned above.
+## Table of Contents
 
-In practice, we will therefore use the PhysioNet Computing in Cardiology challenge 2017 dataset together with  a deep neural network architecture consisting of “33 convolutional layers followed by a linear output layer into a softmax. The network accepts raw ECG data as input (sampled at 200 Hz, or 200 samples per second), and outputs a prediction of one out of 12 possible rhythm classes every 256 input samples” as described in the article "Cardiologist-level arrhythmia detection and classification in ambulatory electrocardiograms using a deep neural network" by AY Hannun et al. (2019). We will implement the different iterative pruning methods based on the pruning heuristic most commonly used in the cited papers : magnitude pruning. We will then plot the accuracies in each case according to the parameter reduction factor, to see which is leading to the best results.
+1. [Overview](#overview)  
+2. [Repository Structure](#repository-structure)  
+3. [Installation](#installation)  
+4. [Dataset Preparation](#dataset-preparation)  
+5. [Launch Experiments](#4launch-experiments)
 
-PhysioNet : https://physionet.org/content/challenge-2017/1.0.0/
+---
+
+## 1. Overview
+
+This repository implements iterative magnitude-based pruning to identify sparse “winning tickets” in a deep neural network trained for ECG classification.  
+Inspired by:
+
+- Frankle & Carbin (2019), *The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks*  
+- Sahu et al. (2022), *LTH-ECG: Applying Lottery Ticket Hypothesis to ECG Classification*
+
+The network architecture is a 1D ResNet variant trained to classify ECG rhythms. Pruning schemes include:
+
+- Global magnitude pruning  
+- Weight rewinding  
+- Fine-tuning without rewinding  
+
+---
+
+## 2. Repository Structure
+```text
+Advanced-ML-Project/  
+    ├── checkpoints/ # Saved model masks and states 
+    ├── plots/ # Result figures generated during runs  
+    ├── utils/ # Utility modules
+    ├── build_datasets.py # Script to build train/dev splits
+    ├── iterative_pruning_f1.ipynb # Notebook: iterative pruning & F1 tracking
+    ├── lth_ecg_final.ipynb # Main experiment notebook
+    ├── resnet1d.py # ResNet1D model definition
+    ├── requirements.txt # Python dependencies
+    ├── setup.sh # Setup script for environment
+    ├── train.json # Training metadata
+    ├── dev.json # Development/validation metadata
+    └── README.md # This README
+```
+
+---
+
+## 3. Installation
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/felixdechamps/Advanced-ML-Project.git
+cd Advanced-ML-Project
+python3 -m venv venv
+source venv/bin/activate
+./setup.sh
+```
+The `setup.sh` file will automatically : 
+- install the libraries from requirements.txt. 
+- create a data/ folder and download data from the PhysioNet Computing in Cardiology Challenge 2017 dataset: https://physionet.org/content/challenge-2017/1.0.0/ inside.
+- launch build_datasets.py to create train.json and dev.json files. 
+
+Ensure you have Python 3.8+ and a CUDA-enabled GPU for efficient training.  
+
+---
+
+## 4. Launch experiments 
+
+- `lth_ecg.ipynb` allows to run LTH-ECG an experiment using the framework described in Sahu et al. (2022) for finding Winning Tickets. 
+- `iterative_pruning.ipynb` allows to run experiment using the iterative pruning framework described in Frankle and Carbin (2019) with or without (fine-tuning) weights rewinding at each round.  
+
+Results are stored in `checkpoints/` and visualized in `plots/.`  
+
+In case you want to restart an experiment where it stopped use the `resume=True` parameter in the `run_lth_ecg` or `iterative_pruning` functions.
+
