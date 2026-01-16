@@ -2,12 +2,9 @@ matplotlib
 wfdb
 torch
 torchinfo
+torchsummary
+torchmetrics
 tqdm
 scipy
 counter
 scikit-learn
-torchsummary
-tensorboard
-tensorflow
-keras
-torchmetrics
