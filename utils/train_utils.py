@@ -55,7 +55,7 @@ def weights_init_kaiming(m):
             init.constant_(m.bias, 0)
 
 
-def train_model(model, train_loader, val_loader, loss_func, device, tb_logger, prior, epochs=10):
+def train_model(model, train_loader, val_loader, loss_func, device, prior, epochs=10):
     """
     Train the classifier for a number of epochs.
     """

@@ -1,4 +1,5 @@
 import torch
+from utils.pruning_utils import Mask
 
 
 def save_checkpoint(state, filename: str = "lth_checkpoint.pth"):
