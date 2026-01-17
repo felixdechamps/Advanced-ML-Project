@@ -82,6 +82,7 @@ class Mask(dict):
             
         return layer_counts
 
+
 def prune(pruning_fraction: float = 0.2, pruning_layers_to_ignore: str = None, trained_model=None, current_mask: Mask = None) : 
     """
     A one iteration of pruning : returns the new updated mask after pruning.
@@ -119,7 +120,7 @@ def prune(pruning_fraction: float = 0.2, pruning_layers_to_ignore: str = None, t
         if k not in new_mask:  # if this weight was already pruned add it to the new mask
             new_mask[k] = current_mask[k]
 
-    return 
+    return new_mask
 
 
 class PrunedModel(nn.Module):
